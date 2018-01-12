@@ -1,4 +1,4 @@
 solve;
-display zysk,ckp,kp_zoc,wzndW1,wzndW2;
-display x,u,x_zoc,u_zoc,c_zoc,c_p,c;
-display p_s,p_d,p_w,p_zoc,p_prac,v,a,r,y,z;
+display x,u,x_zoc,u_zoc,c,c_p,c_zoc;
+display p_s,p_d,p_w,p_zoc,p_prac;
+display zysk,v,a,r,y,z;

@@ -36,8 +36,8 @@ var c_p >= 0 integer;
 var c_zoc >= 0 integer;
 var p_prac >= 0 integer;
 var p_s {S} >= 0 integer;
-var p_d {D} >= 0;
-var p_w {W} >= 0;
+var p_d {D} >= 0 integer;
+var p_w {W} >= 0 integer;
 var p_zoc >= 0 integer;
 var zysk;
 
