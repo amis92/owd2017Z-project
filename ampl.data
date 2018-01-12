@@ -1,0 +1,53 @@
+# wartości parametrów
+param Smax :=
+    S1 11000
+    S2 11000 ;
+param K :
+         1   2   3 :=
+    S1   9  12  15
+    S2  11   8   5 ;
+param K_zoc :=
+    1     0
+    2 10000
+    3 40000 ;
+param Prog_min:
+           1       2      3 :=
+    S1     0    3201    6832
+    S2     0    2030    5619 ;
+param Prog_max:
+           1       2      3 :=
+    S1  3200    6831  11000
+    S2  2029    5618  11000 ;
+param: Prog_zoc_min   Prog_zoc_max :=
+    1          0            2750
+    2       2751            5500
+    3       5501            8250 ;
+param:    Pojem_c       K_c        C_max :=
+    S1         24      1100          343
+    S2         25      1500       10e+07 ;
+param Pojem_p := 13 ;
+param K_p := 670 ;
+param Przepust_max := 17600 ;
+param Przyg :
+         D1      D2 :=
+    S1  0.1     0.9
+    S2  0.1     0.9 ;
+param Pracownicy := 2 ;
+param Porcja := 150 ;
+param Pensja := 170 ;
+param Cena :=
+    W1 440
+    W2 536 ;
+param Umowa :=
+    W1 5500
+    W2 5500 ;
+
+# parametry PMPO
+param xi := 0.01 ;
+param beta := 0.001 ;
+param gamma := 1000 ;
+param:       a            r  :=
+    1 -1100000     -1500000
+    2        0       -40000
+    3    -3000        -5500
+    4        0        -5500 ;

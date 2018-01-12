@@ -1,0 +1,165 @@
+# zbiory
+set S = {'S1', 'S2'};               # surowce
+set D = {'D1', 'D2'};               # półprodukty
+set W = {'W1', 'W2'};               # produkty
+set Progi_kupna = {1..3};           # przedziały cenowe kupna surowca
+set Progi_zoc = {1..3};             # przedziały kosztu pracy zoc
+
+# parametry
+param Smax {S};                     # maksymalna dostępna ilość surowca
+param K {S, Progi_kupna};           # koszt surowca w przedziale cenowym
+param K_zoc {Progi_zoc};            # koszt pracy zoc dla przedziału przetwarzania surowca
+param Prog_min {S, Progi_kupna};    # próg dolny ilości surowca w przedziale cenowym
+param Prog_max {S, Progi_kupna};    # próg górny ilości surowca w przedziale cenowym
+param Prog_zoc_min {Progi_zoc};     # próg dolny surowca w zoc w przedziale kosztowym
+param Prog_zoc_max {Progi_zoc};     # próg górny surowca w zoc w przedziale kosztowym 
+param Pojem_c {S};                  # pojemność ciężarówki dla danego surowca
+param Pojem_p;                      # pojemność przyczepy
+param K_c {S};                      # koszt wynajęcia ciężarówki
+param K_p;                          # koszt wynajęcia przyczepy
+param C_max {S};                    # maksimum ciężarówek dla danego surowca do wynajęcia
+param Przepust_max;                 # przepustowość maksymalna przygotowalni
+param Przyg {S, D};                 # ilość półproduktu produkowanego z surowca
+param Pracownicy;                   # ilość pracowników potrzebnych na każdą Porcę surowca
+param Porcja;                       # ilość surowca wymagająca opieki grupy Pracowników
+param Pensja;                       # koszt jednego pracownika przygotowalni
+param Cena {W};                     # cena sprzedaży produktu
+param Umowa {W};                    # wymagana umową ilość produktu
+
+# zmienne
+var x {S, Progi_kupna} >= 0 integer;
+var u {S, Progi_kupna} binary;
+var x_zoc {Progi_zoc} >= 0 integer;
+var u_zoc {Progi_zoc} binary;
+var c {S} >= 0 integer;
+var c_p >= 0 integer;
+var c_zoc >= 0 integer;
+var p_prac >= 0 integer;
+var p_s {S} >= 0 integer;
+var p_d {D} >= 0;
+var p_w {W} >= 0;
+var p_zoc >= 0 integer;
+var zysk;
+
+# zmienne kryteriów
+var kp_zoc >= 0 integer;
+var ckp >= 0 integer;
+var wzndW1;
+var wzndW2;
+
+# ograniczenia progów
+subject to JedenProgCenowySurowcaAktywny {i in S}:
+    sum {j in Progi_kupna} u[i,j] <= 1;
+subject to ProgiCenoweSurowcowDolne {i in S, j in Progi_kupna}:
+    u[i,j] * Prog_min[i,j] <= x[i,j];
+subject to ProgiCenoweSurowcowGorne {i in S, j in Progi_kupna}:
+    x[i,j] <= u[i,j] * Prog_max[i,j];
+subject to JedenProgKosztuZocAktywny:
+    sum {j in Progi_zoc} u_zoc[j] <= 1;
+subject to ProgiKosztuZocDolne {j in Progi_zoc}:
+    u_zoc[j] * Prog_zoc_min[j] <= x_zoc[j];
+subject to ProgiKosztuZocGorne {j in Progi_zoc}:
+    x_zoc[j] <= u_zoc[j] * Prog_zoc_max[j];
+
+# ograniczenia ciężarówek
+subject to IloscCiezarowek {i in S}:
+    c[i] <= C_max[i];
+subject to IloscPrzyczep:
+    c_p <= c['S1'];
+subject to PojemnoscCiezarowekS1_Przygotowalnia:
+    p_s['S1'] <= Pojem_c['S1']*c['S1'] + Pojem_p*c_p;
+subject to PojemnoscCiezarowekS2_Przygotowalnia:
+    p_s['S2'] <= Pojem_c['S2']*c['S2'];
+subject to PojemnoscCiezarowekS2_zoc:
+    p_zoc <= Pojem_c['S2']*c_zoc;
+
+# ograniczenia przygotowalni
+subject to PracownicyNaPorcjeSurowca:
+    p_prac * Porcja >= sum {i in S} p_s[i];
+subject to PolproduktyZSurowcaWPrzygotowalni {j in D}:
+    p_d[j] = sum {i in S} (Przyg[i,j] * p_s[i]);
+subject to PrzepustowoscPrzygotowalni:
+    sum {i in S} p_s[i] <= Przepust_max;
+
+# ograniczenia przetwarzania wzgl kupna
+subject to PodzialSurowcaS1:
+    p_s['S1'] = sum {j in Progi_kupna} x['S1',j];
+subject to PodzialSurowcaS2:
+    p_s['S2'] + p_zoc = sum {j in Progi_kupna} x['S2',j];
+subject to ProgPrzetwarzaniaZoc:
+    p_zoc = sum {j in Progi_zoc} x_zoc[j];
+
+# ograniczenia kryteriow
+subject to KosztPracyZoc:
+    kp_zoc = sum {j in Progi_zoc} (u_zoc[j]*K_zoc[j]);
+subject to CalkowityKosztProdukcji:
+    ckp = kp_zoc
+        + Pracownicy*p_prac*Pensja
+        + sum {i in S} c[i]*K_c[i] + c_p*K_p + c_zoc*K_c['S2']
+        + sum {i in S} (
+              x[i,1]*K[i,1]
+            + x[i,2]*K[i,2] + u[i,2]*Prog_max[i,1]*(K[i,1]-K[i,2])
+            + x[i,3]*K[i,3] + u[i,3]*(Prog_max[i,1]*(K[i,1]-K[i,2]) + Prog_max[i,2]*(K[i,2]-K[i,3]))
+        );
+subject to WzglednyNiedoborW1:
+    wzndW1 = p_d['D1'] - Umowa['W1'];
+subject to WzglednyNiedoborW2:
+    wzndW2 = p_d['D2'] + p_zoc - Umowa['W2'];
+
+# liczenie zysku
+subject to W1zD1:
+    p_w['W1'] <= p_d['D1'];
+subject to W2zD2:
+    p_w['W2'] <= p_d['D2'] + p_zoc;
+subject to CalkowityZysk:
+    zysk <= sum {i in W} (p_w[i]*Cena[i]) - ckp;
+
+# # # # # # # # #
+# PMPO - start  #
+# # # # # # # # #
+
+# zbiory PMPO
+set Y = {1..4}; # zbiór kryteriów
+
+# parametry PMPO
+param xi > 0;               # parametr zapewniający quasi zupełność parametryzacji
+param beta > 0, < 1;        # parametr skalujący nadmiar
+param gamma > 1;            # parametr skalujący niedobór
+param r {Y};                # wektor rezerwacji
+param a {i in Y} > r[i];    # wektor aspiracji
+
+# zmienne PMPO
+var z {Y}; # wartość funkcji osiągnięcia
+var y {Y}; # wartość funkcji oceny
+var v; # minimum z wektora z;
+
+# # # # # # # # #
+# funkcja celu  #
+# # # # # # # # #
+maximize PMPO:
+#    zysk;
+    v + xi*sum {i in Y} z[i];
+
+# ograniczenia PMPO - wektor funkcji ocen
+subject to Y_CKP:
+    y[1] = -ckp;
+subject to Y_KPZOC:
+    y[2] = -kp_zoc;
+subject to Y_WZNDW1:
+    y[3] = wzndW1;
+subject to Y_WZNDW2:
+    y[4] = wzndW2;
+
+# ograniczenia PMPO
+subject to NadmiarPMPO {i in Y}:
+    (a[i] - r[i])*z[i] <= gamma*(y[i] - r[i]);
+subject to PomiedzyPMPO {i in Y}:
+    (a[i] - r[i])*z[i] <= (y[i] - r[i]);
+subject to NiedoborPMPO {i in Y}:
+    (a[i] - r[i])*(z[i] - 1) <= beta*(y[i] - r[i]);
+subject to MinimumZ {i in Y}:
+    v <= z[i];
+
+# # # # # # # # #
+# PMPO - koniec #
+# # # # # # # # #
